@@ -27,6 +27,13 @@ python3 anikoto.py "https://anikoto.to/watch/solo-leveling-ilh08/ep-1"
 python3 anikoto.py "https://anikoto.to/watch/frieren-beyond-journey-s-end-c6fbj/ep-1" -p /Users/Downloads
 ```
 
+```python
+python3 anikoto.py "https://anikoto.to/watch/bottom-tier-character-tomozaki-2nd-stage-0et8i" -p /Users/Downloads  --source megaplay
+```
+
+Sources: megaplay and Kiwi (Default)
+Default Audio is Dub 
+
 
 ## help
 
