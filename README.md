@@ -31,11 +31,9 @@ python3 anikoto.py "https://anikoto.tv/watch/frieren-beyond-journey-s-end-c6fbj/
 python3 anikoto.py "https://anikoto.tv/watch/bottom-tier-character-tomozaki-2nd-stage-0et8i" -p /Users/Downloads  --source megaplay
 ```
 
-Sources: megaplay and Kiwi (Default)
-
-
+Sources: megaplay and Kiwi (Kiwi being Default)
 Default Audio is Dub 
-
+Subs are downloaded first
 
 ## help
 
