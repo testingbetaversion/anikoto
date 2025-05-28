@@ -33,7 +33,7 @@ python3 anikoto.py "https://anikoto.tv/watch/bottom-tier-character-tomozaki-2nd-
 
 Sources: megaplay and Kiwi (Kiwi being Default)
 Default Audio is Dub 
-Subs are downloaded first
+Subs for sub/dub are downloaded first
 
 ## help
 
