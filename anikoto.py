@@ -66,10 +66,10 @@ session.headers.update({
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
     "x-requested-with": "XMLHttpRequest",
 })
-parser = argparse.ArgumentParser(description="TheChosen (https://anikoto.to/) Downloader", epilog="Example usage:\n python3 anikoto.py OPTIONS URL")
+parser = argparse.ArgumentParser(description="TheChosen (https://anikoto.tv/) Downloader", epilog="Example usage:\n python3 anikoto.py OPTIONS URL")
 parser.add_argument("--version","-v", action="version", version=f"%(prog)s {version}")
 parser.add_argument("--debug", action="store_true", help="Enable debug mode")
-parser.add_argument("url", help="Video Url like: https://anikoto.to/watch/solo-leveling-ilh08/ep-1")
+parser.add_argument("url", help="Video Url like: https://anikoto.tv/watch/solo-leveling-ilh08/ep-1")
 parser.add_argument("--quality","-q", choices=['2160','1440',"1080", "720", "480",'360'],default="1080", help="Choose a Quality")
 parser.add_argument("--audio", "-a", choices=['sub', 'dub'], default='dub', help="Download Audio")
 parser.add_argument("--subtitles", "-ss", action="store_true",default=True, help="Download Subs")
@@ -85,7 +85,7 @@ args = parser.parse_args()
 
 
 r = session.get(args.url)
-search = re.search(r'https://anikoto.to/anime/getinfo/(\d+)', r.text)
+search = re.search(r'https://anikoto.tv/anime/getinfo/(\d+)', r.text)
 soup = BeautifulSoup(r.text, 'html.parser')
 title_element = soup.find('h1', class_='title d-title')
 anime = title_element.get_text(strip=True)
@@ -93,7 +93,7 @@ if not search:
     print("Error: Unable to find the video ID in the provided URL.")
     exit(1)
 video_id = search.group(1)
-r = session.get(f"https://anikoto.to/ajax/episode/list/{video_id}?vrf=")
+r = session.get(f"https://anikoto.tv/ajax/episode/list/{video_id}?vrf=")
 html_code = r.json()['result']
 
 
@@ -151,7 +151,7 @@ if 'megaplay' in args.source.lower() or args.subtitles:
     for number, data in enumerate(episode_data, start=1): 
         try:
             title = data['title']
-            url = "https://anikoto.to/ajax/server/list"
+            url = "https://anikoto.tv/ajax/server/list"
             querystring = {"servers":data['data-ids']}
 
             r = session.get(url, params=querystring)
@@ -173,13 +173,13 @@ if 'megaplay' in args.source.lower() or args.subtitles:
                 print()
 
 
-            url = "https://anikoto.to/ajax/server"
+            url = "https://anikoto.tv/ajax/server"
             querystring = {"get":data['data-link-id']}
             r = session.get(url, params=querystring)
             url = r.json()['result']['url']
 
             r = session.get(url, headers={
-                "referer": "https://anikoto.to/",
+                "referer": "https://anikoto.tv/",
             })
 
             id_ = re.search(r' data-id=\"(\d+)\"', r.text).group(1)
@@ -221,10 +221,10 @@ if 'kiwi' in args.source.lower():
             if "Stream" in stream and args.quality in stream:
                 print(stream)
                 server_code = r.json()[stream][args.audio]['url']
-                url = "https://anikoto.to/ajax/server"
+                url = "https://anikoto.tv/ajax/server"
                 querystring = {"get":server_code}
                 r = session.get(url, params=querystring)
                 url = r.json()['result']['url']
                 if "#" in url:
                     url = base64.b64decode(url.split("#")[1]).decode('utf-8')
-                    download(url, "https://anikoto.to/", args.path,anime, data['title'], number)
+                    download(url, "https://anikoto.tv/", args.path,anime, data['title'], number)
