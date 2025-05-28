@@ -1,7 +1,7 @@
 
 # Anikoto Downloader
 
-Dowload anime from anikoto.to
+Dowload anime from anikoto.tv
 
 
 
@@ -17,18 +17,18 @@ Install Dependencies
 ## Usage/Examples
 
 ```python
-python3 anikoto.py https://anikoto.to/watch/one-piece-odmau  -p /Users/Downloads  -a sub --range 1129-1129
+python3 anikoto.py https://anikoto.tv/watch/one-piece-odmau  -p /Users/Downloads  -a sub --range 1129-1129
 ```
 ```python
-python3 anikoto.py "https://anikoto.to/watch/solo-leveling-ilh08/ep-1"
+python3 anikoto.py "https://anikoto.tv/watch/solo-leveling-ilh08/ep-1"
 ````
 
 ```python
-python3 anikoto.py "https://anikoto.to/watch/frieren-beyond-journey-s-end-c6fbj/ep-1" -p /Users/Downloads
+python3 anikoto.py "https://anikoto.tv/watch/frieren-beyond-journey-s-end-c6fbj/ep-1" -p /Users/Downloads
 ```
 
 ```python
-python3 anikoto.py "https://anikoto.to/watch/bottom-tier-character-tomozaki-2nd-stage-0et8i" -p /Users/Downloads  --source megaplay
+python3 anikoto.py "https://anikoto.tv/watch/bottom-tier-character-tomozaki-2nd-stage-0et8i" -p /Users/Downloads  --source megaplay
 ```
 
 Sources: megaplay and Kiwi (Default)
@@ -47,10 +47,10 @@ usage: anikoto.py [-h] [--version] [--debug]
                   [--source SOURCE] [--range RANGE]
                   url
 
-Anikoto (https://anikoto.to/) Downloader
+Anikoto (https://anikoto.tv/) Downloader
 
 positional arguments:
-  url                   Video Url like: https://anikoto.to/watch/solo-
+  url                   Video Url like: https://anikoto.tv/watch/solo-
                         leveling-ilh08/ep-1
 
 options:
