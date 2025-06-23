@@ -1,0 +1,10 @@
+README.md
+pyproject.toml
+setup.py
+anikoto/__init__.py
+anikoto/anikoto.py
+anikoto.egg-info/PKG-INFO
+anikoto.egg-info/SOURCES.txt
+anikoto.egg-info/dependency_links.txt
+anikoto.egg-info/requires.txt
+anikoto.egg-info/top_level.txt

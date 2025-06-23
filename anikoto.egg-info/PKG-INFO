@@ -1,3 +1,23 @@
+Metadata-Version: 2.4
+Name: anikoto
+Version: 0.1.0
+Summary: Download Anime from https://anikoto.tv/
+Home-page: https://github.com/testingbetaversion/anikoto
+Author: testingbetaversion
+Author-email: testingbetaversion <moonmuaaz+alt@gmail.com>
+License: MIT
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+Requires-Dist: requests
+Requires-Dist: yt-dlp
+Requires-Dist: bs4
+Dynamic: author
+Dynamic: home-page
+Dynamic: requires-python
+
 
 # Anikoto Downloader
 
@@ -5,14 +25,6 @@ Dowload anime from anikoto.tv
 
 
 ## Installation
-
-Install from Pypie
-
-```bash
-python3 -m pip install anikoto
-```
-
-
 
 Install from Github
 
