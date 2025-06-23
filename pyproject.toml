@@ -1,6 +1,6 @@
 [project]
 name = "anikoto" 
-version = "0.1.0"
+version = "0.1.1"
 description = "Download Anime from https://anikoto.tv/"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -17,6 +17,9 @@ dependencies = [
         'yt-dlp',
         'bs4',
 ]
+
+[project.scripts]
+anikoto = "anikoto.anikoto:main"
 
 [build-system]
 requires = ["setuptools>=61", "wheel"]

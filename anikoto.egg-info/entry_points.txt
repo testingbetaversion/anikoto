@@ -1,0 +1,2 @@
+[console_scripts]
+anikoto = anikoto.anikoto:main
