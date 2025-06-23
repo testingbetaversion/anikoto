@@ -9,7 +9,7 @@ Dowload anime from anikoto.tv
 Install from Github
 
 ```bash
-   pip install git+https://github.com/testingbetaversion/anikoto.git
+python3 -m pip install git+https://github.com/testingbetaversion/anikoto.git
 ```
 
 
