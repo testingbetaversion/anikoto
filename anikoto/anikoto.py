@@ -9,6 +9,7 @@ import re
 from bs4 import BeautifulSoup
 import base64
 import yt_dlp
+import subprocess
 
 class CustomFormatter(logging.Formatter):
     COLORS = {
@@ -38,32 +39,105 @@ def configure_logging():
 
 configure_logging()
 
-def download(url, referer, path, anime, title, number):
+def download(url, referer, path, anime, title, number, downloader="yt-dlp"):
     if not os.path.exists(f"{path}/{anime}"):
         os.makedirs(f"{path}/{anime}")
     logging.info(f"Downloading E{number} {title} from {url}")
     if os.path.exists(f"{path}/{anime}/{anime} E{number} {title}.mp4"):
         logging.info(f"File already exists: {path}/{anime}/{anime} E{number} {title}.mp4")
         return
-    ydl_opts = {
-        # 'format': 'bv+ba',  
-        'http_headers': {'Referer': referer}, 
-        'external_downloader': 'aria2c', 
-        'paths': {
-            'temp': 'temp',  
-            'home': f'{path}/{anime}' 
-        },
-        'outtmpl': f'{anime} E{number} {title}.%(ext)s', 
-    }
+    if downloader == 'yt-dlp':
+        ydl_opts = {
+            # 'format': 'bv+ba',  
+            'http_headers':  {
+                    # 'pragma': "no-cache",
+                    # 'cache-control': "no-cache",
+                    # 'sec-ch-ua-platform': "\"macOS\"",
+                    'user-agent': "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+                    # 'sec-ch-ua': "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+                    # 'sec-ch-ua-mobile': "?0",
+                    'accept': "*/*",
+                    'origin': referer,
+                    'sec-fetch-site': "cross-site",
+                    'sec-fetch-mode': "cors",
+                    'sec-fetch-dest': "empty",
+                    'referer': referer,
+                    # 'accept-encoding': "gzip, deflate, br, zstd",
+                    # 'accept-language': "en-US,en;q=0.9",
+                    # 'priority': "u=1, i"
+                },
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([url])
+            'external_downloader': 'aria2c', 
+            'paths': {
+                'temp': 'temp',  
+                'home': f'{path}/{anime}' 
+            },
+            'outtmpl': f'{anime} E{number} {title}.%(ext)s', 
+            'generic':{
+                'impersonate': 'chrome',
+            },
+            'verbose':True,
+            'debug_printtraffic':True,
+            'socket_timeout':10,
+            'nocheckcertificate': True,
+            # 'encoding':'gzip, deflate, br, zstd',
+        }
+
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+
+    elif downloader == 'ffmpeg':
+        headers = (
+            "user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/141.0.0.0 Safari/537.36\r\n"
+            f"referer: {referer}\r\n"
+            f'accept-language:en-US,en;q=0.9\r\n'
+            'accept-encoding: gzip, deflate, br, zstd\r\n'
+            "accept: */*\r\n"
+   
+            "sec-fetch-dest: empty\r\n"
+            "sec-fetch-mode: cors\r\n"
+            "sec-fetch-site: cross-site\r\n"
+        )
+        print(headers)
+        cmd = [
+            "ffmpeg",
+            "-headers", headers,
+            "-i", url,
+            "-acodec", "copy",
+            '-vcodec', 'copy',
+            "-loglevel", "debug",
+            "-y",
+            f"{path}/{anime}/{anime} E{number} {title}.mp4"
+        ]
+
+        subprocess.run(cmd, check=True)
+    
+    else:
+        subprocess.run([
+            'N_m3u8DL-RE',url,
+            "-H","user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/141.0.0.0 Safari/537.36",
+            "-H",f"referer: {referer}",
+            "-H",f'accept-language:en-US,en;q=0.9',
+            "-H",'accept-encoding: gzip, deflate, br, zstd',
+            "-H","accept: */*",
+
+            "-H","sec-fetch-dest: empty",
+            "-H","sec-fetch-mode: cors",
+            "-H","sec-fetch-site: cross-site",
+            '--save-dir',f"{path}/{anime}",
+            '--log-level', 'DEBUG',
+            '--save-name', f"{anime} E{number} {title} 3",
+            '-M', 'format=mp4'
+    ])
 
 def main():
     version = "1.0.0"
     session = requests.Session()
     session.headers.update({
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+
         "x-requested-with": "XMLHttpRequest",
     })
     parser = argparse.ArgumentParser(description="TheChosen (https://anikoto.tv/) Downloader", epilog="Example usage:\n python3 anikoto.py OPTIONS URL")
@@ -72,6 +146,7 @@ def main():
     parser.add_argument("url", help="Video Url like: https://anikoto.tv/watch/solo-leveling-ilh08/ep-1")
     parser.add_argument("--quality","-q", choices=['2160','1440',"1080", "720", "480",'360'],default="1080", help="Choose a Quality")
     parser.add_argument("--audio", "-a", choices=['sub', 'dub'], default='dub', help="Download Audio")
+    parser.add_argument("--downloader", "-d", choices=['yt-dlp', 'N_m3u8DL-RE', 'ffmpeg'], default='yt-dlp', help="Downloader")
     parser.add_argument("--subtitles", "-ss", action="store_true",default=True, help="Download Subs")
     parser.add_argument("--list", action="store_true",default=False, help="List Episodes")
     parser.add_argument("--last", action="store_true",default=False, help="Only Download Last Episode")
@@ -148,65 +223,86 @@ def main():
 
 
         
-    if 'kiwi' in args.source.lower():
+    # if 'kiwi' in args.source.lower():
+    try:
         for data in episode_data:
             number = data['number']
-            r = session.get(f"https://mapper.kotostream.online/api/mal/{data['data-mel']}/{number}/{data['data-timestamp']}")
-            for stream in r.json():
-                if "Stream" in stream and args.quality in stream:
-                    print(stream)
-                    if args.debug:
-                        print(r.json())
-                    server_code = r.json()[stream][args.audio]['url']
-                    url = "https://anikoto.tv/ajax/server"
-                    querystring = {"get":server_code}
-                    r = session.get(url, params=querystring)
-                    url = r.json()['result']['url']
-                    if "#" in url:
-                        url = base64.b64decode(url.split("#")[1]).decode('utf-8')
-                        download(url, "https://anikoto.tv/", args.path,anime, data['title'], number)
+            # print(f'https://mapper.kotostream.online/api/mal/{data['data-mel']}/{number}/{data['data-timestamp']}')
+            r = session.get(f"https://mapper.kotostream.online/api/mal/{data['data-mel']}/{number}/{data['data-timestamp']}", timeout=5, verify=False)
+            if r.status_code == 200:
+                for stream in r.json():
+                    if "Stream" in stream and args.quality in stream:
+                        print(stream)
+                        if args.debug:
+                            print(r.json())
+                        server_code = r.json()[stream][args.audio]['url']
+                        url = "https://anikoto.tv/ajax/server"
+                        querystring = {"get":server_code}
+                        r = session.get(url, params=querystring)
+                        url = r.json()['result']['url']
+                        if "#" in url:
+                            url = base64.b64decode(url.split("#")[1]).decode('utf-8')
+                            download(url, "https://anikoto.tv/", args.path,anime, data['title'], number)
+    except:
+        print(format_exc())
 
 
-    if 'megaplay' in args.source.lower() or args.subtitles:
+    # if 'megaplay' in args.source.lower() or args.subtitles:
+
+    for number, data in enumerate(episode_data, start=1): 
+        try:
+            title = data['title']
+            url = "https://anikoto.tv/ajax/server/list"
+            querystring = {"servers":data['data-ids']}
+
+            r = session.get(url, params=querystring)
+            soup = BeautifulSoup(r.json()['result'], 'html.parser')
+
+            servers = soup.find_all('div', class_='type')
+
+            server_data = []
+            for server in servers:
     
-        for number, data in enumerate(episode_data, start=1): 
-            try:
-                title = data['title']
-                url = "https://anikoto.tv/ajax/server/list"
-                querystring = {"servers":data['data-ids']}
+                server_type = server.get('data-type').upper() 
+                server_item = server.find_all('li') 
+                for li in server_item:
+                    data_link_id = li.get('data-link-id')
+                    server_data.append({'type': server_type, 'data-link-id': data_link_id, 'li': li.text})
 
-                r = session.get(url, params=querystring)
-                soup = BeautifulSoup(r.json()['result'], 'html.parser')
-
-                servers = soup.find_all('div', class_='type')
-
-                server_data = []
-                for server in servers:
-                    server_type = server.get('data-type').upper()  # Get SUB or DUB
-                    server_item = server.find('li')  # Find the li element containing data-link-id
-                    data_link_id = server_item.get('data-link-id') if server_item else None
-                    server_data.append({'type': server_type, 'data-link-id': data_link_id})
-
-                # Print the results
-                for data in server_data:
-                    print(f"type: {data['type']}")
-                    print(f"data-link-id: {data['data-link-id']}")
-                    print()
+            
+            for data in server_data:
+                print()
+                print(f"type: {data['type']}")
+                print(f"data-link-id: {data['data-link-id']}")
+                print(f'server_item: {data['li']}')
+                print()
 
 
                 url = "https://anikoto.tv/ajax/server"
+                
                 querystring = {"get":data['data-link-id']}
-                r = session.get(url, params=querystring)
+                try:
+                    r = session.get(url, params=querystring)
+                except Exception as e:
+                    print(format_exc())
+                    continue
                 url = r.json()['result']['url']
-
+                print(url)
                 r = session.get(url, headers={
                     "referer": "https://anikoto.tv/",
                 })
-
-                id_ = re.search(r' data-id=\"(\d+)\"', r.text).group(1)
+                # print(r.text)
+                id_ = re.search(r' data-id=\"(\d+)\"', r.text)
+                # if not id_:
+                #     continue
+                # else:
+                if not id_:
+                    continue
+                id_ = id_.group(1)
 
                 r = session.get("https://megaplay.buzz/stream/getSources", params={"id":id_})
-
+                if 'sources' not in r.json():
+                    continue
                 print(r.json()['sources']['file'])
             
                 if "tracks" in r.json():
@@ -228,11 +324,11 @@ def main():
                                 
                         else:
                             logging.warning(f"Track Request Error{s_r.text}")
-                if args.subtitles and 'megaplay' not in args.source.lower():
-                    continue
-                download(r.json()['sources']['file'], "https://megaplay.buzz/", args.path, anime, title, number)
-            except:
-                print(format_exc()) 
+
+                if data['type'].lower() == args.audio.lower():
+                    download(r.json()['sources']['file'], "https://megaplay.buzz/", args.path, anime, title, number, args.downloader)
+        except:
+            print(format_exc()) 
 
 if __name__ == "__main__":
     try:
