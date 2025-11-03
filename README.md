@@ -35,7 +35,7 @@ anikoto "https://anikoto.tv/watch/frieren-beyond-journey-s-end-c6fbj/ep-1" -p /U
 ```
 
 ```bash
-anikoto "https://anikoto.tv/watch/bottom-tier-character-tomozaki-2nd-stage-0et8i" -p /Users/Downloads  --source megaplay
+anikoto "https://anikoto.tv/watch/bottom-tier-character-tomozaki-2nd-stage-0et8i" -p /Users/Downloads  
 ```
 
 Sources: megaplay and Kiwi (Kiwi being Default)
