@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: anikoto
-Version: 0.1.1
+Version: 1.0.0
 Summary: Download Anime from https://anikoto.tv/
 Home-page: https://github.com/testingbetaversion/anikoto
 Author: testingbetaversion
@@ -55,7 +55,7 @@ anikoto "https://anikoto.tv/watch/frieren-beyond-journey-s-end-c6fbj/ep-1" -p /U
 ```
 
 ```bash
-anikoto "https://anikoto.tv/watch/bottom-tier-character-tomozaki-2nd-stage-0et8i" -p /Users/Downloads  --source megaplay
+anikoto "https://anikoto.tv/watch/bottom-tier-character-tomozaki-2nd-stage-0et8i" -p /Users/Downloads  
 ```
 
 Sources: megaplay and Kiwi (Kiwi being Default)
