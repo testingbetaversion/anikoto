@@ -1,3 +1,0 @@
-requests
-yt-dlp
-bs4

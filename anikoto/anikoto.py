@@ -39,7 +39,7 @@ def configure_logging():
 
 configure_logging()
 
-def download(url, referer, path, anime, title, number, downloader="yt-dlp"):
+def download(url, referer, path, anime, title, number,args, downloader="yt-dlp",):
     if not os.path.exists(f"{path}/{anime}"):
         os.makedirs(f"{path}/{anime}")
     logging.info(f"Downloading E{number} {title} from {url}")
@@ -76,13 +76,15 @@ def download(url, referer, path, anime, title, number, downloader="yt-dlp"):
             'generic':{
                 'impersonate': 'chrome',
             },
-            'verbose':True,
-            'debug_printtraffic':True,
+            # 'verbose':True,
+            # 'debug_printtraffic':True,
             'socket_timeout':10,
             'nocheckcertificate': True,
             # 'encoding':'gzip, deflate, br, zstd',
         }
-
+        if args.debug:
+            ydl_opts['debug_printtraffic'] = True
+            ydl_opts['verbose'] = True
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
 
@@ -242,7 +244,7 @@ def main():
                         url = r.json()['result']['url']
                         if "#" in url:
                             url = base64.b64decode(url.split("#")[1]).decode('utf-8')
-                            download(url, "https://anikoto.tv/", args.path,anime, data['title'], number)
+                            download(url, "https://anikoto.tv/", args.path,anime, data['title'], number, args, args.downloader)
     except:
         print(format_exc())
 
@@ -326,7 +328,7 @@ def main():
                             logging.warning(f"Track Request Error{s_r.text}")
 
                 if data['type'].lower() == args.audio.lower():
-                    download(r.json()['sources']['file'], "https://megaplay.buzz/", args.path, anime, title, number, args.downloader)
+                    download(r.json()['sources']['file'], "https://megaplay.buzz/", args.path, anime, title, number, args, args.downloader)
         except:
             print(format_exc()) 
 
