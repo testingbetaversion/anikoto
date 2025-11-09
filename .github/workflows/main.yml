@@ -63,7 +63,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: anikoto-linux
-          path: dist/anikoto-linux
+          path: dist/anikoto
 
   build-macos:
     runs-on: macos-latest
@@ -91,27 +91,60 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: anikoto-macos
-          path: dist/anikoto-macos
+          path: dist/anikoto
 
   release:
-      needs: [build-windows, build-linux, build-macos]
-      runs-on: ubuntu-latest
-      steps:
-        - name: Download all artifacts
-          uses: actions/download-artifact@v4
-          with:
-            path: dist
+    needs: [build-windows, build-linux, build-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
 
-        - name: Create GitHub Release
-          uses: softprops/action-gh-release@v2
-          with:
-            tag_name: v1.0.${{ github.run_number }}
-            name: "Anikoto v1.0.${{ github.run_number }}"
-            body: |
-              Automated release build.
-            files: |
-              dist/anikoto-windows/anikoto.exe
-              dist/anikoto-linux/anikoto-linux
-              dist/anikoto-macos/anikoto-macos
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Prepare release assets (rename + zip)
+        run: |
+          set -eux
+
+          # Windows: rename and zip
+          if [ -f dist/anikoto-windows/anikoto.exe ]; then
+            mv dist/anikoto-windows/anikoto.exe dist/anikoto-windows/anikoto-windows.exe
+            zip -j dist/anikoto-windows/anikoto-windows.zip dist/anikoto-windows/anikoto-windows.exe
+          else
+            echo "Warning: dist/anikoto-windows/anikoto.exe not found"
+          fi
+
+          # Linux: rename, ensure exec bit, and zip
+          if [ -f dist/anikoto-linux/anikoto ]; then
+            mv dist/anikoto-linux/anikoto dist/anikoto-linux/anikoto-linux
+            chmod +x dist/anikoto-linux/anikoto-linux
+            zip -j dist/anikoto-linux/anikoto-linux.zip dist/anikoto-linux/anikoto-linux
+          else
+            echo "Warning: dist/anikoto-linux/anikoto not found"
+          fi
+
+          # macOS: rename, ensure exec bit, and zip
+          if [ -f dist/anikoto-macos/anikoto ]; then
+            mv dist/anikoto-macos/anikoto dist/anikoto-macos/anikoto-macos
+            chmod +x dist/anikoto-macos/anikoto-macos
+            zip -j dist/anikoto-macos/anikoto-macos.zip dist/anikoto-macos/anikoto-macos
+          else
+            echo "Warning: dist/anikoto-macos/anikoto not found"
+          fi
+
+          # Show what we will upload
+          ls -lR dist
+
+      - name: Create GitHub Release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: "Anikoto v1.0.${{ github.run_number }}"
+          body: |
+            Automated release build.
+          files: |
+            dist/anikoto-windows/anikoto-windows.zip
+            dist/anikoto-linux/anikoto-linux.zip
+            dist/anikoto-macos/anikoto-macos.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
