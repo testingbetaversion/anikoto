@@ -70,7 +70,6 @@ options:
   --list                List Episodes
   --last                Only Download Last Episode
   --path, -p PATH       path to save the file
-  --source SOURCE       select source
   --range, -r RANGE     Specify episode range (e.g. 1-5) if you want to
                         download only episode 1129 use 1129-1129
 

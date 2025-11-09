@@ -1,6 +1,6 @@
 [project]
 name = "anikoto" 
-version = "1.0.2"
+version = "1.0.3"
 description = "Download Anime from https://anikoto.tv/"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -20,6 +20,10 @@ dependencies = [
 
 [project.scripts]
 anikoto = "anikoto.anikoto:main"
+
+[project.urls]
+"Homepage" = "https://github.com/testingbetaversion/anikoto"
+"Source" = "https://github.com/testingbetaversion/anikoto"
 
 [build-system]
 requires = ["setuptools>=61", "wheel"]
