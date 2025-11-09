@@ -63,7 +63,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: anikoto-linux
-          path: dist/anikoto
+          path: dist/anikoto-linux
 
   build-macos:
     runs-on: macos-latest
@@ -91,7 +91,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: anikoto-macos
-          path: dist/anikoto
+          path: dist/anikoto-macos
 
   release:
       needs: [build-windows, build-linux, build-macos]
@@ -111,7 +111,7 @@ jobs:
               Automated release build.
             files: |
               dist/anikoto-windows/anikoto.exe
-              dist/anikoto-linux/anikoto
-              dist/anikoto-macos/anikoto
+              dist/anikoto-linux/anikoto-linux
+              dist/anikoto-macos/anikoto-macos
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
