@@ -3,6 +3,11 @@
 
 Dowload anime from anikoto.tv
 
+## Screenshot
+
+![App Screenshot](https://i.imgur.com/VEYUMcn.png)
+
+
 
 ## Installation
 
@@ -12,14 +17,11 @@ Install from Pypie
 python3 -m pip install anikoto
 ```
 
-
-
 Install from Github
 
 ```bash
 python3 -m pip install git+https://github.com/testingbetaversion/anikoto.git
 ```
-
 
 ## Usage/Examples
 
@@ -44,7 +46,7 @@ Subs for sub/dub will be downloaded by default
 ## help
 
 ```cmd
-$ anikoto --help
+ $ anikoto --help
 usage: anikoto [-h] [--version] [--debug] [--quality {2160,1440,1080,720,480,360}] [--audio {sub,dub}]
                [--downloader {yt-dlp,N_m3u8DL-RE,ffmpeg}] [--subtitles] [--list] [--last] [--path PATH] [--range RANGE]
                url
@@ -56,7 +58,7 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
-  --version, -v         show programs version number and exit
+  --version, -v         show program's version number and exit
   --debug               Enable debug mode
   --quality, -q {2160,1440,1080,720,480,360}
                         Choose a Quality
