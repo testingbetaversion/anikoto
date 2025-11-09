@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 import base64
 import yt_dlp
 import subprocess
+from urllib.parse import urlparse
 
 class CustomFormatter(logging.Formatter):
     COLORS = {
@@ -87,7 +88,10 @@ def download(url, referer, path, anime, title, number,args, downloader="yt-dlp",
             ydl_opts['verbose'] = True
 
         if args.quality:
-            ydl_opts['format'] = f'bv[height<=?{args.quality}]+ba'
+            # ydl_opts['format'] = f'bv[height<=?{args.quality}]+ba'
+            ydl_opts['format_sort'] = [f'res:{args.quality}']
+        if args.debug:
+            logging.debug(ydl_opts)
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
 
@@ -144,7 +148,7 @@ def main():
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
         "x-requested-with": "XMLHttpRequest",
     })
-    parser = argparse.ArgumentParser(description="TheChosen (https://anikoto.tv/) Downloader", epilog="Example usage:\n python3 anikoto.py OPTIONS URL")
+    parser = argparse.ArgumentParser(description="Anikoto (https://anikoto.tv/) Downloader", epilog="Example usage:\n python3 anikoto.py OPTIONS URL")
     parser.add_argument("--version","-v", action="version", version=f"%(prog)s {version}")
     parser.add_argument("--debug", action="store_true", help="Enable debug mode")
     parser.add_argument("url", help="Video Url like: https://anikoto.tv/watch/solo-leveling-ilh08/ep-1")
@@ -161,18 +165,21 @@ def main():
 
     args = parser.parse_args()
 
-
-
     r = session.get(args.url)
-    search = re.search(r'https://anikoto.tv/anime/getinfo/(\d+)', r.text)
+    
+    parsed = urlparse(r.url)
+    domain = f"{parsed.scheme}://{parsed.netloc}"
+
+
+    search = re.search(rf'{domain}/anime/getinfo/(\d+)', r.text)
     soup = BeautifulSoup(r.text, 'html.parser')
     title_element = soup.find('h1', class_='title d-title')
     anime = title_element.get_text(strip=True)
     if not search:
-        print("Error: Unable to find the video ID in the provided URL.")
+        logging.error("Error: Unable to find the video ID in the provided URL.")
         exit(1)
     video_id = search.group(1)
-    r = session.get(f"https://anikoto.tv/ajax/episode/list/{video_id}?vrf=")
+    r = session.get(f"{domain}/ajax/episode/list/{video_id}?vrf=")
     html_code = r.json()['result']
 
 
@@ -192,38 +199,40 @@ def main():
 
     for number, data in enumerate(episode_data, start=1):
         print(f"{number}: {data['title']}")
-        title = data['title']
-        print(f"Data IDs: {data['data-ids']}")
-        data_ids = data['data-ids']
-        data_mel = data['data-mel']
-        print(f"Data MAL: {data_mal}")
-        data_timestamp = data['data-timestamp']
-        print(f"Data Timestamp: {data['data-timestamp']}")
-        print()
+        if args.debug:
+            title = data['title']
+            print(f"Data IDs: {data['data-ids']}")
+            data_ids = data['data-ids']
+            data_mel = data['data-mel']
+            print(f"Data MAL: {data_mal}")
+            data_timestamp = data['data-timestamp']
+            print(f"Data Timestamp: {data['data-timestamp']}")
+            print()
 
 
     if args.range:
         try:
             start, end = map(int, args.range.split('-'))
             episode_data = episode_data[start-1:end]
-            print(f"Downloading episodes {start} to {end}:")
+            logging.info(f"Downloading episodes {start} to {end}:")
             for number, data in enumerate(episode_data, start=start):
                 print(f"{number}: {data['title']}")
         except Exception as e:
-            print(f"Invalid range format. Use like '1-5'. Error: {e}")
+            logging.info(f"Invalid range format. Use like '1-5'. Error: {e}")
             exit(1)
 
     if args.list:
-        print("List of Episodes:")
-        for number, data in enumerate(episode_data, start=1):
-            print(f"{number}: {data['title']}")
+        logging.info("List of Episodes:")
+        for data in episode_data:
+            print(f"{data['number']}: {data['title']}")
         exit(0)
 
     if args.last:
         episode_data = episode_data[-1:]
-        print("Last Episode:")
-        for number, data in enumerate(episode_data, start=1):       
-            print(f"{number}: {data['title']}")
+        logging.info("Last Episode:")
+        # if args.debug:
+        for data in episode_data:       
+            print(f"{data['number']}: {data['title']}")
 
 
         
@@ -236,27 +245,30 @@ def main():
             if r.status_code == 200:
                 for stream in r.json():
                     if "Stream" in stream and args.quality in stream:
-                        print(stream)
+                        # print(stream)
                         if args.debug:
                             print(r.json())
                         server_code = r.json()[stream][args.audio]['url']
-                        url = "https://anikoto.tv/ajax/server"
+                        url = f"{domain}/ajax/server"
                         querystring = {"get":server_code}
                         r = session.get(url, params=querystring)
                         url = r.json()['result']['url']
                         if "#" in url:
                             url = base64.b64decode(url.split("#")[1]).decode('utf-8')
-                            download(url, "https://anikoto.tv/", args.path,anime, data['title'], number, args, args.downloader)
-    except:
-        print(format_exc())
+                            download(url, f"{domain}/", args.path,anime, data['title'], number, args, args.downloader)
+    except Exception as e:
+        logging.error(f'ERROR:{e}')
+        if args.debug:
+            print(format_exc())
 
 
     # if 'megaplay' in args.source.lower() or args.subtitles:
 
-    for number, data in enumerate(episode_data, start=1): 
+    for data in episode_data: 
         try:
+            number = data['number']
             title = data['title']
-            url = "https://anikoto.tv/ajax/server/list"
+            url = f"{domain}/ajax/server/list"
             querystring = {"servers":data['data-ids']}
 
             r = session.get(url, params=querystring)
@@ -275,14 +287,15 @@ def main():
 
             
             for data in server_data:
-                print()
-                print(f"type: {data['type']}")
-                print(f"data-link-id: {data['data-link-id']}")
-                print(f'server_item: {data['li']}')
-                print()
+                if args.debug:
+                    print()
+                    print(f"type: {data['type']}")
+                    print(f"data-link-id: {data['data-link-id']}")
+                    print(f'server_item: {data['li']}')
+                    print()
 
 
-                url = "https://anikoto.tv/ajax/server"
+                url = f"{domain}/ajax/server"
                 
                 querystring = {"get":data['data-link-id']}
                 try:
@@ -291,9 +304,9 @@ def main():
                     print(format_exc())
                     continue
                 url = r.json()['result']['url']
-                print(url)
+                # print(url)
                 r = session.get(url, headers={
-                    "referer": "https://anikoto.tv/",
+                    "referer": f"{domain}/",
                 })
                 # print(r.text)
                 id_ = re.search(r' data-id=\"(\d+)\"', r.text)
@@ -307,13 +320,14 @@ def main():
                 r = session.get("https://megaplay.buzz/stream/getSources", params={"id":id_})
                 if 'sources' not in r.json():
                     continue
-                print(r.json()['sources']['file'])
+                if args.debug:
+                    print(r.json()['sources']['file'])
             
                 if "tracks" in r.json():
                     for track in r.json()['tracks']:
-                        print(f"Track: {track.get('label')} ({track.get('kind')})")
+                        logging.info(f"Track: {track.get('label')} ({track.get('kind')})")
                         if track.get('file'):
-                            print(f"Track URL: {track.get('file')}")
+                            logging.info(f"Track URL: {track.get('file')}")
                             if not os.path.exists(f"{args.path}/{anime}/{anime} E{number} {title} {track.get('label')}.vtt"):
                                 logging.info(f"Downloading subtitles for E{number} {title} {track.get('label')}")
                                 s_r = session.get(track.get('file'),headers={
@@ -331,8 +345,11 @@ def main():
 
                 if data['type'].lower() == args.audio.lower():
                     download(r.json()['sources']['file'], "https://megaplay.buzz/", args.path, anime, title, number, args, args.downloader)
-        except:
-            print(format_exc()) 
+        except Exception as e:
+            logging.error(f'ERROR:{e}')
+            if args.debug:
+                print(format_exc())
+
 
 if __name__ == "__main__":
     try:
