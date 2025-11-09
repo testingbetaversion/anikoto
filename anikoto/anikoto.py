@@ -50,12 +50,12 @@ def download(url, referer, path, anime, title, number,args, downloader="yt-dlp",
         ydl_opts = {
             # 'format': 'bv+ba',  
             'http_headers':  {
-                    # 'pragma': "no-cache",
-                    # 'cache-control': "no-cache",
-                    # 'sec-ch-ua-platform': "\"macOS\"",
+                    'pragma': "no-cache",
+                    'cache-control': "no-cache",
+                    'sec-ch-ua-platform': "\"macOS\"",
                     'user-agent': "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
-                    # 'sec-ch-ua': "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
-                    # 'sec-ch-ua-mobile': "?0",
+                    'sec-ch-ua': "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+                    'sec-ch-ua-mobile': "?0",
                     'accept': "*/*",
                     'origin': referer,
                     'sec-fetch-site': "cross-site",
@@ -64,7 +64,7 @@ def download(url, referer, path, anime, title, number,args, downloader="yt-dlp",
                     'referer': referer,
                     # 'accept-encoding': "gzip, deflate, br, zstd",
                     # 'accept-language': "en-US,en;q=0.9",
-                    # 'priority': "u=1, i"
+                    'priority': "u=1, i"
                 },
 
             'external_downloader': 'aria2c', 
@@ -85,6 +85,9 @@ def download(url, referer, path, anime, title, number,args, downloader="yt-dlp",
         if args.debug:
             ydl_opts['debug_printtraffic'] = True
             ydl_opts['verbose'] = True
+
+        if args.quality:
+            ydl_opts['format'] = f'bv[height<=?{args.quality}]+ba'
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
 
@@ -101,7 +104,7 @@ def download(url, referer, path, anime, title, number,args, downloader="yt-dlp",
             "sec-fetch-mode: cors\r\n"
             "sec-fetch-site: cross-site\r\n"
         )
-        print(headers)
+        # print(headers)
         cmd = [
             "ffmpeg",
             "-headers", headers,
@@ -139,7 +142,6 @@ def main():
     session = requests.Session()
     session.headers.update({
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
-
         "x-requested-with": "XMLHttpRequest",
     })
     parser = argparse.ArgumentParser(description="TheChosen (https://anikoto.tv/) Downloader", epilog="Example usage:\n python3 anikoto.py OPTIONS URL")
