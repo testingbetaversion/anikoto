@@ -40,13 +40,15 @@ def configure_logging():
 
 configure_logging()
 
-def download(url, referer, path, anime, title, number,args, downloader="yt-dlp",):
+def download(url, referer, path, anime, title, number,args):
     if not os.path.exists(f"{path}/{anime}"):
         os.makedirs(f"{path}/{anime}")
     logging.info(f"Downloading E{number} {title} from {url}")
     if os.path.exists(f"{path}/{anime}/{anime} E{number} {title}.mp4"):
         logging.info(f"File already exists: {path}/{anime}/{anime} E{number} {title}.mp4")
         return
+    
+    downloader = args.downloader
     if downloader == 'yt-dlp':
         ydl_opts = {
             # 'format': 'bv+ba',  
@@ -140,6 +142,27 @@ def download(url, referer, path, anime, title, number,args, downloader="yt-dlp",
             '--save-name', f"{anime} E{number} {title} 3",
             '-M', 'format=mp4'
     ])
+        
+def subtitles(response, session, args, anime, number, title):
+    if "tracks" in response:
+        for track in response['tracks']:
+            logging.info(f"Track: {track.get('label')} ({track.get('kind')})")
+            if track.get('file'):
+                logging.info(f"Track URL: {track.get('file')}")
+                if not os.path.exists(f"{args.path}/{anime}/{anime} E{number} {title} {track.get('label')}.vtt"):
+                    logging.info(f"Downloading subtitles for E{number} {title} {track.get('label')}")
+                    s_r = session.get(track.get('file'),headers={
+                        "referer": "https://megaplay.buzz/",
+                    })
+                    if s_r.status_code == 200:
+                        logging.info(f"{args.path}/{anime}/{anime} E{number} {title} {track.get('label')}.vtt")
+                        if not os.path.exists(f"{args.path}/{anime}/"):
+                            os.makedirs(f"{args.path}/{anime}/")
+                        with open(f"{args.path}/{anime}/{anime} E{number} {title} {track.get('label')}.vtt", 'wb') as f:
+                            f.write(s_r.content)
+                    
+            else:
+                logging.warning(f"Track Request Error{s_r.text}")
 
 def main():
     version = "2.0.0"
@@ -159,7 +182,7 @@ def main():
     parser.add_argument("--list", action="store_true",default=False, help="List Episodes")
     parser.add_argument("--last", action="store_true",default=False, help="Only Download Last Episode")
     parser.add_argument("--path", "-p", help="path to save the file", default=os.getcwd())
-    # parser.add_argument("--source", default="Kiwi",help="select source",)
+    parser.add_argument("--source", help="select source",)
     parser.add_argument("--range", "-r", help="Specify episode range (e.g. 1-5) if you want to download only episode 1129 use 1129-1129")
 
 
@@ -255,7 +278,7 @@ def main():
                         url = r.json()['result']['url']
                         if "#" in url:
                             url = base64.b64decode(url.split("#")[1]).decode('utf-8')
-                            download(url, f"{domain}/", args.path,anime, data['title'], number, args, args.downloader)
+                            download(url, f"{domain}/", args.path,anime, data['title'], number, args,)
     except Exception as e:
         logging.error(f'ERROR:{e}')
         if args.debug:
@@ -294,6 +317,9 @@ def main():
                     print(f'server_item: {data['li']}')
                     print()
 
+                if args.source:
+                    if args.source.lower() not in data['li'].lower():
+                        continue
 
                 url = f"{domain}/ajax/server"
                 
@@ -304,47 +330,54 @@ def main():
                     print(format_exc())
                     continue
                 url = r.json()['result']['url']
-                # print(url)
-                r = session.get(url, headers={
+     
+                main_r = session.get(url, headers={
                     "referer": f"{domain}/",
                 })
                 # print(r.text)
-                id_ = re.search(r' data-id=\"(\d+)\"', r.text)
-                # if not id_:
-                #     continue
-                # else:
-                if not id_:
-                    continue
-                id_ = id_.group(1)
+                
+                # MegaPlay
+                id_ = re.search(r' data-id=\"(\d+)\"', main_r.text)
+                if id_:
+                    id_ = id_.group(1)
 
-                r = session.get("https://megaplay.buzz/stream/getSources", params={"id":id_})
-                if 'sources' not in r.json():
-                    continue
-                if args.debug:
-                    print(r.json()['sources']['file'])
-            
-                if "tracks" in r.json():
-                    for track in r.json()['tracks']:
-                        logging.info(f"Track: {track.get('label')} ({track.get('kind')})")
-                        if track.get('file'):
-                            logging.info(f"Track URL: {track.get('file')}")
-                            if not os.path.exists(f"{args.path}/{anime}/{anime} E{number} {title} {track.get('label')}.vtt"):
-                                logging.info(f"Downloading subtitles for E{number} {title} {track.get('label')}")
-                                s_r = session.get(track.get('file'),headers={
-                                    "referer": "https://megaplay.buzz/",
-                                })
-                                if s_r.status_code == 200:
-                                    logging.info(f"{args.path}/{anime}/{anime} E{number} {title} {track.get('label')}.vtt")
-                                    if not os.path.exists(f"{args.path}/{anime}/"):
-                                        os.makedirs(f"{args.path}/{anime}/")
-                                    with open(f"{args.path}/{anime}/{anime} E{number} {title} {track.get('label')}.vtt", 'wb') as f:
-                                        f.write(s_r.content)
-                                
-                        else:
-                            logging.warning(f"Track Request Error{s_r.text}")
+                    r = session.get("https://megaplay.buzz/stream/getSources", params={"id":id_})
+                    if 'sources' in r.json():
+                        if args.debug:
+                            print(r.json()['sources']['file'])
 
-                if data['type'].lower() == args.audio.lower():
-                    download(r.json()['sources']['file'], "https://megaplay.buzz/", args.path, anime, title, number, args, args.downloader)
+                        subtitles(r.json(), session, args, anime, number, title)
+                        
+                        if data['type'].lower() == args.audio.lower():
+                            download(r.json()['sources']['file'], "https://megaplay.buzz/", args.path, anime, title, number, args, )
+
+                # vidstream
+                id_2 = re.search(r' data-ep-id=\"(\d+)\"', main_r.text)
+
+                if id_2:
+                    id_2 = id_2.group(1)
+                    type_ = re.search(r"type: '(\w+)',", main_r.text)
+                    if not type_:
+                        raise Exception("Error: type not found")
+                    type_ = type_.group(1)
+                    domain2 = re.search(r"domain2_url: '(.+)',", main_r.text)
+                    if not domain2:
+                        raise Exception("Error: domain not found")
+                    domain2 = domain2.group(1)
+                    
+                    response = session.get(f'{domain2}/save_data.php?id={id_2}-{type_}', headers={
+                        'referer': domain
+                    })
+                    # print(response.text)
+                    subtitles(response.json()['data'], session, args, anime, number, title)
+
+                    if type_.lower() == args.audio.lower():
+                            download(response.json()['data']['sources'][0]['url'],domain, args.path, anime, title, number, args, )
+
+                    
+
+
+                
         except Exception as e:
             logging.error(f'ERROR:{e}')
             if args.debug:
