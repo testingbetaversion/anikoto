@@ -89,3 +89,25 @@ jobs:
         with:
           name: anikoto-macos
           path: dist/anikoto
+release:
+    needs: [build-windows, build-linux, build-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: "Anikoto v1.0.${{ github.run_number }}"
+          body: |
+            Automated release build.
+          files: |
+            dist/anikoto-windows/anikoto.exe
+            dist/anikoto-linux/anikoto
+            dist/anikoto-macos/anikoto
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
