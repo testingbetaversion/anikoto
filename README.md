@@ -1,13 +1,15 @@
+# 🌀 Anikoto Downloader
 
-# Anikoto Downloader
-
-Dowload anime from anikoto.tv
+> **Download anime from `anikoto.tv` / `anikoto.bz`** 
 
 ## Screenshot
 
 ![App Screenshot](https://i.imgur.com/VEYUMcn.png)
 
 
+[![PyPI](https://img.shields.io/pypi/v/anikoto.svg)](https://pypi.org/project/anikoto)
+[![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)]()
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)]()
 
 ## Installation
 
@@ -74,3 +76,9 @@ options:
 
 Example usage: python3 anikoto.py OPTIONS URL
 ```
+
+
+
+## ❤️ Thanks
+
+This project was made with love. If it has helped you, a ⭐ on GitHub would be greatly appreciated.
