@@ -1,4 +1,5 @@
-import requests
+# import requests
+from curl_cffi import requests
 import argparse
 from traceback import format_exc
 
@@ -167,6 +168,7 @@ def subtitles(response, session, args, anime, number, title):
 def main():
     version = "2.0.0"
     session = requests.Session()
+    # session.verify = False
     session.headers.update({
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
         "x-requested-with": "XMLHttpRequest",
