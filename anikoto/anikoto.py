@@ -152,6 +152,7 @@ def download(url, referer, path, anime, title, number,args):
     ])
         
 def subtitles(response, session, args, anime, number, title):
+    anime = clean_name(anime)
     if "tracks" in response:
         for track in response['tracks']:
             logging.info(f"Track: {track.get('label')} ({track.get('kind')})")
