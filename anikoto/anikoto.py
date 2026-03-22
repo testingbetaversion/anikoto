@@ -41,7 +41,14 @@ def configure_logging():
 
 configure_logging()
 
+
+def clean_name(name):
+    name = re.sub(r'[\\/*?:"<>|]', '_', name)
+    name = re.sub(r'\s+', ' ', name).strip()
+    return name
+
 def download(url, referer, path, anime, title, number,args):
+    anime = clean_name(anime)
     if not os.path.exists(f"{path}/{anime}"):
         os.makedirs(f"{path}/{anime}")
     logging.info(f"Downloading E{number} {title} from {url}")
