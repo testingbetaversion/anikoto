@@ -174,7 +174,7 @@ def subtitles(response, session, args, anime, number, title):
                 logging.warning(f"Track Request Error{s_r.text}")
 
 def main():
-    version = "2.0.0"
+    version = "3.5.0"
     session = requests.Session()
     # session.verify = False
     session.headers.update({

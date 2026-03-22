@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='anikoto',
-    version='3.0.0',
+    version='3.5.0',
     packages=find_packages(),
     install_requires=[
         'requests',
