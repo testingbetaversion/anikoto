@@ -1,6 +1,6 @@
 # 🌀 Anikoto Downloader
 
-> **Download anime from `anikoto.tv` / `anikoto.bz`** 
+> **Download anime from `anikoto.tv` / `anikoto.bz` / `anikoto.net`** 
 
 ## Screenshot
 

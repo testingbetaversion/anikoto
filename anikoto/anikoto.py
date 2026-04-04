@@ -61,20 +61,16 @@ def download(url, referer, path, anime, title, number,args):
         ydl_opts = {
             # 'format': 'bv+ba',  
             'http_headers':  {
-                    'pragma': "no-cache",
-                    'cache-control': "no-cache",
-                    'sec-ch-ua-platform': "\"macOS\"",
+                    
+                    
+                    
                     'user-agent': "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
-                    'sec-ch-ua': "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
-                    'sec-ch-ua-mobile': "?0",
+                    
                     'accept': "*/*",
                     'origin': referer,
-                    'sec-fetch-site': "cross-site",
-                    'sec-fetch-mode': "cors",
-                    'sec-fetch-dest': "empty",
+                    
                     'referer': referer,
-                    # 'accept-encoding': "gzip, deflate, br, zstd",
-                    # 'accept-language': "en-US,en;q=0.9",
+                    
                     'priority': "u=1, i"
                 },
 
@@ -85,8 +81,9 @@ def download(url, referer, path, anime, title, number,args):
             },
             'outtmpl': f'{anime} E{number} {title}.%(ext)s', 
             'generic':{
-                'impersonate': 'chrome',
+                'impersonate': 'Edge',
             },
+            # 'cookiesfrombrowser': ('chrome'),
             # 'verbose':True,
             # 'debug_printtraffic':True,
             'socket_timeout':10,
@@ -274,7 +271,15 @@ def main():
         for data in episode_data:
             number = data['number']
             # print(f'https://mapper.kotostream.online/api/mal/{data['data-mel']}/{number}/{data['data-timestamp']}')
-            r = session.get(f"https://mapper.kotostream.online/api/mal/{data['data-mel']}/{number}/{data['data-timestamp']}", timeout=5, verify=False)
+            # r = session.get(f"https://mapper.kotostream.online/api/mal/{data['data-mel']}/{number}/{data['data-timestamp']}", timeout=5, verify=False) # seems down 
+            logging.info(f"Trying to get stream URL for E{number} {data['title']} from Kiwi Stream")
+            logging.info(f"Request URL: https://mapper.mewcdn.online/api/mal/{data['data-mel']}/{number}/{data['data-timestamp']}")
+            r = session.get(f"https://mapper.mewcdn.online/api/mal/{data['data-mel']}/{number}/{data['data-timestamp']}", headers={
+                'User-Agent': "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0",
+                'referer': domain,
+                'origin': domain,   
+
+            })
             if r.status_code == 200:
                 for stream in r.json():
                     if "Stream" in stream and args.quality in stream:
@@ -288,7 +293,8 @@ def main():
                         url = r.json()['result']['url']
                         if "#" in url:
                             url = base64.b64decode(url.split("#")[1]).decode('utf-8')
-                            download(url, f"{domain}/", args.path,anime, data['title'], number, args,)
+                            # download(url, f"{domain}/", args.path,anime, data['title'], number, args,)
+                            download(url, f"https://kwik.cx2.mewcdn.online", args.path,anime, data['title'], number, args,)
     except Exception as e:
         logging.error(f'ERROR:{e}')
         if args.debug:
