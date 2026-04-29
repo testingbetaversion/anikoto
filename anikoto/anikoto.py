@@ -170,8 +170,8 @@ def subtitles(response, session, args, anime, number, title):
             except:
                 logging.info(format_exc())       
                     
-            else:
-                logging.warning(f"Track Request Error{s_r.text}")
+            # else:
+            #     logging.warning(f"Track Request Error{s_r.text}")
 
 def main():
     version = "3.5.0"
