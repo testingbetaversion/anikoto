@@ -152,20 +152,23 @@ def subtitles(response, session, args, anime, number, title):
     anime = clean_name(anime)
     if "tracks" in response:
         for track in response['tracks']:
-            logging.info(f"Track: {track.get('label')} ({track.get('kind')})")
-            if track.get('file'):
-                logging.info(f"Track URL: {track.get('file')}")
-                if not os.path.exists(f"{args.path}/{anime}/{anime} E{number} {title} {track.get('label')}.vtt"):
-                    logging.info(f"Downloading subtitles for E{number} {title} {track.get('label')}")
-                    s_r = session.get(track.get('file'),headers={
-                        "referer": "https://megaplay.buzz/",
-                    })
-                    if s_r.status_code == 200:
-                        logging.info(f"{args.path}/{anime}/{anime} E{number} {title} {track.get('label')}.vtt")
-                        if not os.path.exists(f"{args.path}/{anime}/"):
-                            os.makedirs(f"{args.path}/{anime}/")
-                        with open(f"{args.path}/{anime}/{anime} E{number} {title} {track.get('label')}.vtt", 'wb') as f:
-                            f.write(s_r.content)
+            try:
+                logging.info(f"Track: {track.get('label')} ({track.get('kind')})")
+                if track.get('file'):
+                    logging.info(f"Track URL: {track.get('file')}")
+                    if not os.path.exists(f"{args.path}/{anime}/{anime} E{number} {title} {track.get('label')}.vtt"):
+                        logging.info(f"Downloading subtitles for E{number} {title} {track.get('label')}")
+                        s_r = session.get(track.get('file'),headers={
+                            "referer": "https://megaplay.buzz/",
+                        })
+                        if s_r.status_code == 200:
+                            logging.info(f"{args.path}/{anime}/{anime} E{number} {title} {track.get('label')}.vtt")
+                            if not os.path.exists(f"{args.path}/{anime}/"):
+                                os.makedirs(f"{args.path}/{anime}/")
+                            with open(f"{args.path}/{anime}/{anime} E{number} {title} {track.get('label')}.vtt", 'wb') as f:
+                                f.write(s_r.content)
+            except:
+                logging.info(format_exc())       
                     
             else:
                 logging.warning(f"Track Request Error{s_r.text}")
