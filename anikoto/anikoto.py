@@ -1,5 +1,8 @@
-# import requests
-from curl_cffi import requests
+
+try:
+    from curl_cffi import requests
+except ImportError:
+    import requests
 import argparse
 from traceback import format_exc
 
