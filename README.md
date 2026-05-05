@@ -56,7 +56,8 @@ usage: anikoto [-h] [--version] [--debug] [--quality {2160,1440,1080,720,480,360
 Anikoto (https://anikoto.tv/) Downloader
 
 positional arguments:
-  url                   Video Url like: https://anikoto.tv/watch/solo-leveling-ilh08/ep-1
+  url                   Video Url like: https://anikoto.tv/watch/solo-
+                        leveling-ilh08/ep-1
 
 options:
   -h, --help            show this help message and exit
@@ -72,9 +73,9 @@ options:
   --list                List Episodes
   --last                Only Download Last Episode
   --path, -p PATH       path to save the file
-  --range, -r RANGE     Specify episode range (e.g. 1-5) if you want to download only episode 1129 use 1129-1129
-
-Example usage: python3 anikoto.py OPTIONS URL
+  --source SOURCE       select source
+  --range, -r RANGE     Specify episode range (e.g. 1-5) if you want to
+                        download only episode 1129 use 1129-1129
 ```
 
 
