@@ -78,6 +78,9 @@ def download(url, referer, path, anime, title, number,args):
                 },
 
             'external_downloader': 'aria2c', 
+            'hls_prefer_native': {'m3u8': 'native', 'dash': 'native'},
+            'concurrent_fragment_downloads':10,
+
             'paths': {
                 'temp': 'temp',  
                 'home': f'{path}/{anime}' 
@@ -121,6 +124,7 @@ def download(url, referer, path, anime, title, number,args):
         # print(headers)
         cmd = [
             "ffmpeg",
+            '-extension_picky', '0',
             "-headers", headers,
             "-i", url,
             "-acodec", "copy",
@@ -274,33 +278,34 @@ def main():
         
     # if 'kiwi' in args.source.lower():
     try:
-        for data in episode_data:
-            number = data['number']
-            # print(f'https://mapper.kotostream.online/api/mal/{data['data-mel']}/{number}/{data['data-timestamp']}')
-            # r = session.get(f"https://mapper.kotostream.online/api/mal/{data['data-mel']}/{number}/{data['data-timestamp']}", timeout=5, verify=False) # seems down 
-            logging.info(f"Trying to get stream URL for E{number} {data['title']} from Kiwi Stream")
-            logging.info(f"Request URL: https://mapper.mewcdn.online/api/mal/{data['data-mel']}/{number}/{data['data-timestamp']}")
-            r = session.get(f"https://mapper.mewcdn.online/api/mal/{data['data-mel']}/{number}/{data['data-timestamp']}", headers={
-                'User-Agent': "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0",
-                'referer': domain,
-                'origin': domain,   
+        if not args.source or 'kiwi' in args.source.lower():
+            for data in episode_data:
+                number = data['number']
+                # print(f'https://mapper.kotostream.online/api/mal/{data['data-mel']}/{number}/{data['data-timestamp']}')
+                # r = session.get(f"https://mapper.kotostream.online/api/mal/{data['data-mel']}/{number}/{data['data-timestamp']}", timeout=5, verify=False) # seems down 
+                logging.info(f"Trying to get stream URL for E{number} {data['title']} from Kiwi Stream")
+                logging.info(f"Request URL: https://mapper.mewcdn.online/api/mal/{data['data-mel']}/{number}/{data['data-timestamp']}")
+                r = session.get(f"https://mapper.mewcdn.online/api/mal/{data['data-mel']}/{number}/{data['data-timestamp']}", headers={
+                    'User-Agent': "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0",
+                    'referer': domain,
+                    'origin': domain,   
 
-            })
-            if r.status_code == 200:
-                for stream in r.json():
-                    if "Stream" in stream and args.quality in stream:
-                        # print(stream)
-                        if args.debug:
-                            print(r.json())
-                        server_code = r.json()[stream][args.audio]['url']
-                        url = f"{domain}/ajax/server"
-                        querystring = {"get":server_code}
-                        r = session.get(url, params=querystring)
-                        url = r.json()['result']['url']
-                        if "#" in url:
-                            url = base64.b64decode(url.split("#")[1]).decode('utf-8')
-                            # download(url, f"{domain}/", args.path,anime, data['title'], number, args,)
-                            download(url, f"https://kwik.cx2.mewcdn.online", args.path,anime, data['title'], number, args,)
+                })
+                if r.status_code == 200:
+                    for stream in r.json():
+                        if "Stream" in stream and args.quality in stream:
+                            # print(stream)
+                            if args.debug:
+                                print(r.json())
+                            server_code = r.json()[stream][args.audio]['url']
+                            url = f"{domain}/ajax/server"
+                            querystring = {"get":server_code}
+                            r = session.get(url, params=querystring)
+                            url = r.json()['result']['url']
+                            if "#" in url:
+                                url = base64.b64decode(url.split("#")[1]).decode('utf-8')
+                                # download(url, f"{domain}/", args.path,anime, data['title'], number, args,)
+                                download(url, f"https://kwik.cx2.mewcdn.online", args.path,anime, data['title'], number, args,)
     except Exception as e:
         logging.error(f'ERROR:{e}')
         if args.debug:
@@ -359,6 +364,7 @@ def main():
                 # print(r.text)
                 
                 # MegaPlay
+                # if not args.source or 'megaplay' in args.source.lower():
                 id_ = re.search(r' data-id=\"(\d+)\"', main_r.text)
                 if id_:
                     id_ = id_.group(1)
@@ -373,7 +379,8 @@ def main():
                         if data['type'].lower() == args.audio.lower():
                             download(r.json()['sources']['file'], "https://megaplay.buzz/", args.path, anime, title, number, args, )
 
-                # vidstream
+            # vidstream
+            # if not args.source or 'vidstream' in args.source.lower():
                 id_2 = re.search(r' data-ep-id=\"(\d+)\"', main_r.text)
 
                 if id_2:
