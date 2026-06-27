@@ -9,3 +9,4 @@ anikoto/__pycache__/anikoto.cpython-313.pyc
 .github/.DS_Store
 .github/.DS_Store
 /dist
+/__pycache__

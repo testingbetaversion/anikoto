@@ -434,10 +434,6 @@ def main():
 
                         if type_.lower() == args.audio.lower():
                                 download(response.json()['data']['sources'][0]['url'],domain, args.path, anime, title, number, args, )
-
-                    
-
-
                 
         except Exception as e:
             logging.error(f'ERROR:{e}')
