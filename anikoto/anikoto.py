@@ -4,6 +4,8 @@ try:
 except ImportError:
     import requests
 import argparse
+# from pydoc import html
+import sys
 from traceback import format_exc
 
 import logging
@@ -160,20 +162,22 @@ def subtitles(response, session, args, anime, number, title):
     if "tracks" in response:
         for track in response['tracks']:
             try:
-                logging.info(f"Track: {track.get('label')} ({track.get('kind')})")
-                if track.get('file'):
-                    logging.info(f"Track URL: {track.get('file')}")
-                    if not os.path.exists(f"{args.path}/{anime}/{anime} E{number} {title} {track.get('label')}.vtt"):
-                        logging.info(f"Downloading subtitles for E{number} {title} {track.get('label')}")
-                        s_r = session.get(track.get('file'),headers={
-                            "referer": "https://megaplay.buzz/",
-                        })
-                        if s_r.status_code == 200:
-                            logging.info(f"{args.path}/{anime}/{anime} E{number} {title} {track.get('label')}.vtt")
-                            if not os.path.exists(f"{args.path}/{anime}/"):
-                                os.makedirs(f"{args.path}/{anime}/")
-                            with open(f"{args.path}/{anime}/{anime} E{number} {title} {track.get('label')}.vtt", 'wb') as f:
-                                f.write(s_r.content)
+                logging.info(f"Track Found: {track.get('label')} ({track.get('kind')})")
+                if args.subtitle_lang.lower() in track.get('label').lower():
+                    logging.info(f"Track: {track.get('label')} ({track.get('kind')})")
+                    if track.get('file'):
+                        logging.info(f"Track URL: {track.get('file')}")
+                        if not os.path.exists(f"{args.path}/{anime}/{anime} E{number} {title} {track.get('label')}.vtt"):
+                            logging.info(f"Downloading subtitles for E{number} {title} {track.get('label')}")
+                            s_r = session.get(track.get('file'),headers={
+                                "referer": "https://megaplay.buzz/",
+                            })
+                            if s_r.status_code == 200:
+                                logging.info(f"{args.path}/{anime}/{anime} E{number} {title} {track.get('label')}.vtt")
+                                if not os.path.exists(f"{args.path}/{anime}/"):
+                                    os.makedirs(f"{args.path}/{anime}/")
+                                with open(f"{args.path}/{anime}/{anime} E{number} {title} {track.get('label')}.vtt", 'wb') as f:
+                                    f.write(s_r.content)
             except:
                 logging.info(format_exc())       
                     
@@ -198,8 +202,9 @@ def main():
     parser.add_argument("--subtitles", "-ss", action="store_true",default=True, help="Download Subs")
     parser.add_argument("--list", action="store_true",default=False, help="List Episodes")
     parser.add_argument("--last", action="store_true",default=False, help="Only Download Last Episode")
+    parser.add_argument("--subtitle-lang", "-sl",metavar="LANG",default="English",help="Subtitle language to download (matches track label, e.g. English, Spanish, Arabic)")
     parser.add_argument("--path", "-p", help="path to save the file", default=os.getcwd())
-    parser.add_argument("--source", help="select source",)
+    parser.add_argument("--source", help="select source",choices=['megaplay', 'vidstream', 'kiwi', 'vidcloud', 'vidplay'], default=None)
     parser.add_argument("--range", "-r", help="Specify episode range (e.g. 1-5) if you want to download only episode 1129 use 1129-1129")
 
 
@@ -276,40 +281,43 @@ def main():
 
 
         
-    # if 'kiwi' in args.source.lower():
-    try:
-        if not args.source or 'kiwi' in args.source.lower():
-            for data in episode_data:
-                number = data['number']
-                # print(f'https://mapper.kotostream.online/api/mal/{data['data-mel']}/{number}/{data['data-timestamp']}')
-                # r = session.get(f"https://mapper.kotostream.online/api/mal/{data['data-mel']}/{number}/{data['data-timestamp']}", timeout=5, verify=False) # seems down 
-                logging.info(f"Trying to get stream URL for E{number} {data['title']} from Kiwi Stream")
-                logging.info(f"Request URL: https://mapper.mewcdn.online/api/mal/{data['data-mel']}/{number}/{data['data-timestamp']}")
-                r = session.get(f"https://mapper.mewcdn.online/api/mal/{data['data-mel']}/{number}/{data['data-timestamp']}", headers={
-                    'User-Agent': "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0",
-                    'referer': domain,
-                    'origin': domain,   
+    if 'kiwi' in args.source.lower():
+        try:
+            if not args.source or 'kiwi' in args.source.lower():
+                for data in episode_data:
+                    number = data['number']
+                    # print(f'https://mapper.kotostream.online/api/mal/{data['data-mel']}/{number}/{data['data-timestamp']}')
+                    # r = session.get(f"https://mapper.kotostream.online/api/mal/{data['data-mel']}/{number}/{data['data-timestamp']}", timeout=5, verify=False) # seems down 
+                    logging.info(f"Trying to get stream URL for E{number} {data['title']} from Kiwi Stream")
+                    logging.info(f"Request URL: https://mapper.nekostream.site/api/mal/{data['data-mel']}/{number}/{data['data-timestamp']}")
+                    r = session.get(f"https://mapper.nekostream.site/api/mal/{data['data-mel']}/{number}/{data['data-timestamp']}", headers={
+                        'User-Agent': "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0",
+                        'referer': domain,
+                        'origin': domain,   
 
-                })
-                if r.status_code == 200:
-                    for stream in r.json():
-                        if "Stream" in stream and args.quality in stream:
-                            # print(stream)
-                            if args.debug:
-                                print(r.json())
-                            server_code = r.json()[stream][args.audio]['url']
-                            url = f"{domain}/ajax/server"
-                            querystring = {"get":server_code}
-                            r = session.get(url, params=querystring)
-                            url = r.json()['result']['url']
-                            if "#" in url:
-                                url = base64.b64decode(url.split("#")[1]).decode('utf-8')
-                                # download(url, f"{domain}/", args.path,anime, data['title'], number, args,)
-                                download(url, f"https://kwik.cx2.mewcdn.online", args.path,anime, data['title'], number, args,)
-    except Exception as e:
-        logging.error(f'ERROR:{e}')
-        if args.debug:
-            print(format_exc())
+                    })
+                    if r.status_code == 200:
+                        for stream in r.json():
+                            if "Stream" in stream and args.quality in stream:
+                                # print(stream)
+                                if args.debug:
+                                    print(r.json())
+                                server_code = r.json()[stream][args.audio]['url']
+                                url = f"{domain}/ajax/server"
+                                querystring = {"get":server_code}
+                                r = session.get(url, params=querystring)
+                                url = r.json()['result']['url']
+                                if "#" in url:
+                                    url = base64.b64decode(url.split("#")[1]).decode('utf-8')
+                                    # download(url, f"{domain}/", args.path,anime, data['title'], number, args,)
+                                    download(url, f"https://kwik.cx2.mewcdn.online", args.path,anime, data['title'], number, args,)
+                    
+
+                    
+        except Exception as e:
+            logging.error(f'ERROR:{e}')
+            if args.debug:
+                print(format_exc())
 
 
     # if 'megaplay' in args.source.lower() or args.subtitles:
@@ -356,52 +364,76 @@ def main():
                 except Exception as e:
                     print(format_exc())
                     continue
+
                 url = r.json()['result']['url']
      
                 main_r = session.get(url, headers={
                     "referer": f"{domain}/",
                 })
-                # print(r.text)
                 
-                # MegaPlay
-                # if not args.source or 'megaplay' in args.source.lower():
-                id_ = re.search(r' data-id=\"(\d+)\"', main_r.text)
-                if id_:
-                    id_ = id_.group(1)
 
-                    r = session.get("https://megaplay.buzz/stream/getSources", params={"id":id_})
-                    if 'sources' in r.json():
+                if args.source == 'vidplay':
+                    data_id = re.search(r'data-id="(\d+)"', main_r.text)
+                    if data_id:
+                        data_id = data_id.group(1)
+                    sub_type = re.search(r"type:\s*'([^']+)'", main_r.text)
+                    if sub_type:
+                        sub_type = sub_type.group(1)
+                    if data_id and sub_type:
+                        url = f'https://vidtube.site/stream/getSourcesNew?id={data_id}&type={sub_type}&id={data_id}&type={sub_type}'
+                        res = session.get(url, headers={
+                            "referer": f"{domain}/",
+                        })
+                        if res.status_code == 200:
+                            if args.debug:
+                                print(res.json())
+                            subtitles(res.json(), session, args, anime, number, title)
+                            if sub_type.lower() == args.audio.lower():
+                                download(res.json()['sources']['file'], "https://vidtube.site/", args.path, anime, title, number, args, )
+                else:   
+                    # MegaPlay
+                    # if not args.source or 'megaplay' in args.source.lower():
+                    id_ = re.search(r' data-id=\"(\d+)\"', main_r.text)
+                    if id_:
+                        id_ = id_.group(1)
+
+                        r = session.get("https://megaplay.buzz/stream/getSources", params={"id":id_})
                         if args.debug:
-                            print(r.json()['sources']['file'])
+                            print(r.text, file=sys.stderr)
+    
+                        if r.headers.get('Content-Type') == 'application/json':
+                            if isinstance(r.json(), dict) and 'sources' in r.json():  
+                                if args.debug:
+                                    print(r.json()['sources']['file'])
 
-                        subtitles(r.json(), session, args, anime, number, title)
+                                subtitles(r.json(), session, args, anime, number, title)
+                            
+                                if data['type'].lower() == args.audio.lower():
+                                    download(r.json()['sources']['file'], "https://megaplay.buzz/", args.path, anime, title, number, args, )
+
+                # vidstream
+                # if not args.source or 'vidstream' in args.source.lower():
+                    id_2 = re.search(r' data-ep-id=\"(\d+)\"', main_r.text)
+
+                    if id_2:
+                        id_2 = id_2.group(1)
+                        type_ = re.search(r"type: '(\w+)',", main_r.text)
+                        if not type_:
+                            raise Exception("Error: type not found")
+                        type_ = type_.group(1)
+                        domain2 = re.search(r"domain2_url: '(.+)',", main_r.text)
+                        if not domain2:
+                            raise Exception("Error: domain not found")
+                        domain2 = domain2.group(1)
                         
-                        if data['type'].lower() == args.audio.lower():
-                            download(r.json()['sources']['file'], "https://megaplay.buzz/", args.path, anime, title, number, args, )
+                        response = session.get(f'{domain2}/save_data.php?id={id_2}-{type_}', headers={
+                            'referer': domain
+                        })
 
-            # vidstream
-            # if not args.source or 'vidstream' in args.source.lower():
-                id_2 = re.search(r' data-ep-id=\"(\d+)\"', main_r.text)
+                        subtitles(response.json()['data'], session, args, anime, number, title)
 
-                if id_2:
-                    id_2 = id_2.group(1)
-                    type_ = re.search(r"type: '(\w+)',", main_r.text)
-                    if not type_:
-                        raise Exception("Error: type not found")
-                    type_ = type_.group(1)
-                    domain2 = re.search(r"domain2_url: '(.+)',", main_r.text)
-                    if not domain2:
-                        raise Exception("Error: domain not found")
-                    domain2 = domain2.group(1)
-                    
-                    response = session.get(f'{domain2}/save_data.php?id={id_2}-{type_}', headers={
-                        'referer': domain
-                    })
-                    # print(response.text)
-                    subtitles(response.json()['data'], session, args, anime, number, title)
-
-                    if type_.lower() == args.audio.lower():
-                            download(response.json()['data']['sources'][0]['url'],domain, args.path, anime, title, number, args, )
+                        if type_.lower() == args.audio.lower():
+                                download(response.json()['data']['sources'][0]['url'],domain, args.path, anime, title, number, args, )
 
                     
 
