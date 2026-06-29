@@ -1,3 +1,8 @@
 bs4
 requests
 yt-dlp
+langcodes
+langcodes[data]
+curl_cffi
+cryptography
+m3u8

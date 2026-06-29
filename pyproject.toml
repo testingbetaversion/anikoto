@@ -1,11 +1,11 @@
 [project]
 name = "anikoto" 
-version = "4.1.0"
-description = "Download Anime from https://anikoto.tv/"
+version = "5.0.0"
+description = "Download anime from `anikoto.tv` / `anikoto.bz` / `anikoto.net` / `anikoto.cz`"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
-authors = [{name = "testingbetaversion", email = ""}]
+authors = [{name = "testingbetaversion", email = "moonmuaaz@gmail.com"}]
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
@@ -13,9 +13,14 @@ classifiers = [
 ]
 
 dependencies = [
-      'requests',
+       'requests',
         'yt-dlp',
         'bs4',
+        'curl_cffi',
+        'm3u8',
+        'cryptography',
+        'langcodes'
+
 ]
 
 [project.scripts]

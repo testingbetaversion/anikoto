@@ -49,12 +49,11 @@ Subs for sub/dub will be downloaded by default
 
 ```cmd
  $ anikoto --help
-usage: anikoto.py [-h] [--version] [--debug]
+usage: anikoto [-h] [--version] [--debug]
                   [--quality {2160,1440,1080,720,480,360}] [--audio {sub,dub}]
                   [--downloader {yt-dlp,N_m3u8DL-RE,ffmpeg}] [--subtitles]
                   [--list] [--last] [--subtitle-lang LANG] [--path PATH]
-                  [--source {megaplay,vidstream,kiwi,vidcloud,vidplay}]
-                  [--range RANGE]
+                  [--source SOURCE] [--episode EPISODE] [--range RANGE]
                   url
 
 Anikoto (https://anikoto.tv/) Downloader
@@ -80,10 +79,15 @@ options:
                         Subtitle language to download (matches track label,
                         e.g. English, Spanish, Arabic)
   --path, -p PATH       path to save the file
-  --source {megaplay,vidstream,kiwi,vidcloud,vidplay}
-                        select source
+  --source, -s SOURCE   Comma-separated list of sources to download from
+                        ['megaplay', 'vidstream', 'kiwi', 'vidcloud',
+                        'vidplay']
+  --episode, -e EPISODE
+                        Comma-separated list of Episodes to download
   --range, -r RANGE     Specify episode range (e.g. 1-5) if you want to
                         download only episode 1129 use 1129-1129
+
+
 ```
 
 
