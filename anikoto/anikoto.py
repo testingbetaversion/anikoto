@@ -470,41 +470,56 @@ def main():
                             media.segments.extend(filtered)
                             if args.debug:
                                 logging.info(media.dumps())
-                            try:
-                                upload = requests.post(
-                                    "https://tmpfiles.org/api/v1/upload",
-                                    files={
-                                        "file": ("clean.m3u8", media.dumps(), "application/vnd.apple.mpegurl")
-                                    },
-                                )
-                                logging.info(f"Uploading tmp m3u8: {upload.json()}")
-                            except Exception as e:
-                                logging.error(f"Upload Error: {e}")
-                                if args.debug:
-                                    print(format_exc())
-                                mime = CurlMime()
-                                mime.addpart(
-                                    name="file",
-                                    filename="clean.m3u8",
-                                    content_type="application/vnd.apple.mpegurl",
-                                    # data=media.dumps().encode("utf-8"),
-                                    data=media.dumps()
-                                )
-                                upload = requests.post(
-                                    "https://tmpfiles.org/api/v1/upload",
-                                    multipart=mime,
-                                )
+                            # try:
+                            #     upload = requests.post(
+                            #         "https://tmpfiles.org/api/v1/upload",
+                            #         files={
+                            #             "file": ("clean.m3u8", media.dumps(), "application/vnd.apple.mpegurl")
+                            #         },
+                            #     )
+                            #     logging.info(f"Uploading tmp m3u8: {upload.json()}")
+                            # except Exception as e:
+                            #     logging.error(f"Upload Error: {e}")
+                            #     if args.debug:
+                            #         print(format_exc())
+                            #     mime = CurlMime()
+                            #     mime.addpart(
+                            #         name="file",
+                            #         filename="clean.m3u8",
+                            #         content_type="application/vnd.apple.mpegurl",
+                            #         # data=media.dumps().encode("utf-8"),
+                            #         data=media.dumps().encode("utf-8")
+                            #     )
+                            #     upload = requests.post(
+                            #         "https://tmpfiles.org/api/v1/upload",
+                            #         multipart=mime,
+                            #     )
 
                     
+                            # try:
+                                # data = upload.json()
+                                # if args.debug:
+                                #     logging.info(f"Upload Response: {data}")
+                                # direct_url = data["data"]["url"].replace(
+                                #         "https://tmpfiles.org/",
+                                #         "https://tmpfiles.org/dl/",
+                                #     )
+                                # logging.info(f"Direct URL: {direct_url}")
+                            import requests as std_requests
                             try:
-                                data = upload.json()
-                                if args.debug:
-                                    logging.info(f"Upload Response: {data}")
-                                direct_url = data["data"]["url"].replace(
-                                        "https://tmpfiles.org/",
-                                        "https://tmpfiles.org/dl/",
-                                    )
-                                logging.info(f"Direct URL: {direct_url}")
+                                files = {
+                                    "reqtype": (None, "fileupload"),
+                                    "fileToUpload": ("clean.m3u8", media.dumps(), "application/vnd.apple.mpegurl")
+                                }
+                                
+                                upload = std_requests.post(
+                                    "https://catbox.moe/user/api.php",
+                                    files=files
+                                )
+                                
+                                direct_url = upload.text.strip()
+                                logging.info(f"Uploading tmp m3u8: {direct_url}")
+
 
                                 if sub_type.lower() == args.audio.lower():
                                     download(direct_url, "https://vidtube.site/", args.path, anime, title, number, args, )
@@ -512,8 +527,11 @@ def main():
                                 logging.info("Upload Error")
                                 
                                 os.makedirs(f"{args.path}/{anime}/temp", exist_ok=True)
-                                with open(f'{args.path}/{anime}/temp.m3u8', 'w+') as f:
-                                    media.dump(f)
+                                # with open(f'{args.path}/{anime}/temp.m3u8', 'w+') as f:
+                                #     media.dump(f)
+                                temp_path = f"{args.path}/{anime}/temp.m3u8"
+                                media.dump(temp_path)
+
                                 logging.info("Force N_M3U8-RE Upload")
                                 args.downloader = 'N_m3u8DL-RE'
                                 if sub_type.lower() == args.audio.lower():

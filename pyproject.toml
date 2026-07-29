@@ -1,11 +1,11 @@
 [project]
 name = "anikoto" 
-version = "5.0.0"
+version = "5.1.0"
 description = "Download anime from `anikoto.tv` / `anikoto.bz` / `anikoto.net` / `anikoto.cz`"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
-authors = [{name = "testingbetaversion", email = "moonmuaaz@gmail.com"}]
+authors = [{name = "testingbetaversion", email = ""}]
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
