@@ -442,10 +442,13 @@ def main():
                             # filtered = [s for s in media.segments if "mt.nekostream.site" not in s.uri]
                             filtered = []
                             for segment in media.segments:
-                                if 'mt.nekostream.site' in segment.uri:
-                                    key = bytes([105, 63, 76, 77, 84, 65, 120, 48, 81, 54, 44, 58, 125, 53, 48, 85, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) # extracted from dev tool with js debugging
-                                    iv = bytes([87, 48, 59, 50, 55, 84, 111, 97, 85, 112, 108, 95, 80, 37, 39, 99])
+                                if 'mt.nekostream.site' in segment.uri or 'vidtub.kotocdn.site' in segment.uri:
+   
+                                    key = bytes([105, 63, 76, 77, 84, 65, 120, 48, 81, 54, 44, 58, 125, 53, 48, 85, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])  # extracted from dev tool https://imgur.com/tysK51q
+                                    iv = bytes([87, 48, 59, 50, 55, 84, 111, 97, 85, 112, 108, 95, 80, 37, 39, 99]) # extracted from dev tool https://imgur.com/a/Gc9dAs1
                                     network_string = segment.uri.split('/')[-1]
+                                    if args.debug:
+                                        print(f"Decrypting string: '{network_string}' from segment: {segment.uri}")
                                     normalized = network_string.replace('-', '+').replace('_', '/')
                                     missing_padding = len(normalized) % 4
                                     if missing_padding:
@@ -454,8 +457,9 @@ def main():
                                     cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
                                     decryptor = cipher.decryptor()
                                     decrypted_data = decryptor.update(ciphertext_bytes) + decryptor.finalize()
-                                    unpadder = padding.PKCS7(128).unpadder()
+                                    
                                     try:
+                                        unpadder = padding.PKCS7(128).unpadder()
                                         data = unpadder.update(decrypted_data) + unpadder.finalize()
                                         clean_url = data.decode('utf-8')
                                         logging.info(f"Decrypted URL: {clean_url}")
@@ -463,6 +467,8 @@ def main():
                                         filtered.append(segment)
                                     except ValueError as e:
                                         logging.error(f"Decryption/Unpadding error: {e}")
+                                        if args.debug:
+                                            print(format_exc())
                                 else:
                                     filtered.append(segment)
 
