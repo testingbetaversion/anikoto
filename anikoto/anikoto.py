@@ -357,7 +357,7 @@ def main():
                     print()
                     print(f"type: {data['type']}")
                     print(f"data-link-id: {data['data-link-id']}")
-                    print(f'server_item: {data['li']}')
+                    print(f"server_item: {data['li']}")
                     print()
 
                 if args.source:
