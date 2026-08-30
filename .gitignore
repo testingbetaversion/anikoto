@@ -12,3 +12,6 @@ anikoto/__pycache__/anikoto.cpython-313.pyc
 /__pycache__
 pyproject.toml
 pyproject.toml
+.github/.DS_Store
+anikoto/.DS_Store
+anikoto/__pycache__/anikoto.cpython-314.pyc

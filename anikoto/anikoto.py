@@ -351,7 +351,7 @@ def main():
             episode_ = [value]
         return episode_
     
-    version = "3.5.0"
+    version = "3.5.1"
     session = requests.Session()
     # session.verify = False
     session.headers.update({
@@ -520,7 +520,7 @@ def main():
                 })
 
 
-                if 'hd' in args.source:
+                if 'hd' in args.source or 'vidstream' in args.source:
                     id_ = re.search(r' data-id=\"(\d+)\"', main_r.text)
                     if id_:
                         id_ = id_.group(1)
