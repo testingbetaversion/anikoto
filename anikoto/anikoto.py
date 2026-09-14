@@ -510,7 +510,8 @@ def main():
                 try:
                     r = session.get(url, params=querystring)
                 except Exception as e:
-                    print(format_exc())
+                    if args.debug:
+                        print(format_exc())
                     continue
 
                 url = r.json()['result']['url']
@@ -518,7 +519,6 @@ def main():
                 main_r = session.get(url, headers={
                     "referer": f"{domain}/",
                 })
-
 
                 if 'hd' in args.source or 'vidstream' in args.source:
                     id_ = re.search(r' data-id=\"(\d+)\"', main_r.text)
@@ -530,14 +530,27 @@ def main():
                             print(r.text, file=sys.stderr)
 
                         if r.headers.get('Content-Type') == 'application/json':
-                            if isinstance(r.json(), dict) and 'sources' in r.json():  
+                            if isinstance(r.json(), dict):  
+                                try:
+                                    m3u8_url = r.json()['sources']['file']
+                                except KeyError:
+                                    logging.error(f"Error: 'sources' or 'file' key not found in JSON response for E{number} {title}. Response: {r.json()}")
+                                try:
+                                    m3u8_url = r.json()['tracks'][0]['file']
+                                except KeyError:
+                                    logging.error(f"Error: 'tracks' or 'file' key not found in JSON response for E{number} {title}. Response: {r.json()}")
+                                    continue
+
                                 if args.debug:
-                                    print(r.json()['sources']['file'])
+                                    print(m3u8_url)
 
                                 subtitles(r.json(), session, args, anime, number, title)
                             
                                 if data['type'].lower() == args.audio.lower():
-                                    download(r.json()['sources']['file'], "https://megaplay.buzz/", args.path, anime, title, number, args, )
+                                    download(m3u8_url, "https://megaplay.buzz/", args.path, anime, title, number, args, )
+                                else:
+                                    if args.debug:
+                                        print(f"Skipping download for E{number} {title} as the audio type {data['type']} does not match the requested audio type {args.audio}")
    
                 if 'vidplay' in args.source:
                     if not os.path.exists(f"{args.path}/{anime}/{anime} E{number} {title}.mp4"):
@@ -566,7 +579,10 @@ def main():
                                 manifest = res.json()['sources']['file']
 
                                 if sub_type.lower() == args.audio.lower():
-                                            download(manifest, "https://vidtube.site/", args.path, anime, title, number, args, )
+                                    download(manifest, "https://vidtube.site/", args.path, anime, title, number, args, )
+                                else:
+                                    if args.debug:
+                                        print(f"Skipping download for E{number} {title} as the audio type {sub_type} does not match the requested audio type {args.audio}")
 
     
                         id_2 = re.search(r' data-ep-id=\"(\d+)\"', main_r.text)
@@ -590,6 +606,9 @@ def main():
 
                             if type_.lower() == args.audio.lower():
                                     download(response.json()['data']['sources'][0]['url'],domain, args.path, anime, title, number, args, )
+                            else:
+                                if args.debug:
+                                    print(f"Skipping download for E{number} {title} as the audio type {type_} does not match the requested audio type {args.audio}")
                 
         except Exception as e:
             logging.error(f'ERROR:{e}')
@@ -627,7 +646,7 @@ def main():
                                     url = base64.b64decode(url.split("#")[1]).decode('utf-8')
                                     # download(url, f"{domain}/", args.path,anime, data['title'], number, args,)
                                     download(url, f"https://kwik.cx2.mewcdn.online", args.path,anime, data['title'], number, args,)
-                    
+                
 
                     
         except Exception as e:
