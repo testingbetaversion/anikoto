@@ -18,12 +18,19 @@ import yt_dlp
 import subprocess
 from urllib.parse import urlparse
 import m3u8
-
+import json 
+import time
+import hmac
+from urllib.parse import parse_qs, quote, urljoin, urlsplit
 import requests as another_request
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import padding
+
+import hashlib
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import unpad
 
 class CustomFormatter(logging.Formatter):
     COLORS = {
@@ -147,6 +154,48 @@ def filer_segments(manifest, referer, title, number,args):
     return direct_url
 
 
+
+class ExtractionError(Exception):
+    pass
+
+
+def player_parameters(script):
+    """Read the public AES key/IV and CDN signing parameters, without eval()."""
+    literal = r'("(?:\\.|[^"\\])*")'
+    pattern = (
+        r"\bconst\s+[\w$]+=" + literal
+        + r",[\w$]+=" + literal
+        + r",[\w$]+=" + literal
+        + r",[\w$]+=(\d+);function\s+[\w$]+\("
+    )
+    for match in re.finditer(pattern, script):
+        if "AES-CBC" in script[match.end():match.end() + 2500]:
+            key, iv, secret = (json.loads(value) for value in match.groups()[:3])
+            return key, iv, secret, int(match[4])
+    raise ExtractionError("Player crypto parameters changed; update player_parameters().")
+
+def signed_url(url, secret, ttl):
+    if "token" in parse_qs(urlsplit(url).query):
+        return url
+    path = re.search(r"/([a-f0-9]{32})/([a-f0-9]{32})/", urlsplit(url).path, re.I)
+    if path is None:
+        raise ExtractionError("Unexpected CDN path; cannot reproduce the player's token.")
+    expires = int(time.time()) + ttl
+    message = f"{expires}|{path[1].lower()}/{path[2].lower()}".encode()
+    signature = hmac.new(secret.encode(), message, hashlib.sha256).digest()
+    encode = lambda value: base64.urlsafe_b64encode(value).decode().rstrip("=")
+    token = encode(message) + "." + encode(signature)
+    separator = "&" if urlsplit(url).query else "?"
+    return url + separator + "token=" + quote(token)
+
+
+def decrypt_source(encoded, key, iv):
+    # The JS TextEncoder helper truncates/zero-pads the key to 32 bytes.
+    key_bytes = key.encode("utf-8")[:32].ljust(32, b"\0")
+    iv_bytes = iv.encode("utf-8")[:16].ljust(16, b"\0")
+    encrypted = base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4))
+    cipher = AES.new(key_bytes, AES.MODE_CBC, iv_bytes)
+    return json.loads(unpad(cipher.decrypt(encrypted), AES.block_size).decode("utf-8"))
 
 def download(url, referer, path, anime, title, number,args):
     anime = clean_name(anime)
@@ -469,7 +518,8 @@ def main():
             r = session.get(url, params=querystring)
             print(f"Scrapping E{number} {title}  ", end="\r")
             soup = BeautifulSoup(r.json()['result'], 'html.parser')
-
+          
+       
             servers = soup.find_all('div', class_='type')
 
             server_data = []
@@ -520,6 +570,21 @@ def main():
                     "referer": f"{domain}/",
                 })
 
+                try:
+                    soup = BeautifulSoup(main_r.text, "html.parser")
+                    player = soup.select_one("#megaplay-player[data-id]")
+                    script = next(
+                        (s["src"] for s in soup.select("script[src]") if "e1-player" in s["src"]),
+                        None,
+                    )
+                    if player is None or script is None:
+                        raise ExtractionError("Unsupported embed layout: MegaPlay player/script missing.")
+                    js = session.get(script).text
+                    key, iv, secret, ttl = player_parameters(js)
+                except:
+                    if args.debug:
+                        print(format_exc())
+
                 if 'hd' in args.source or 'vidstream' in args.source:
                     id_ = re.search(r' data-id=\"(\d+)\"', main_r.text)
                     if id_:
@@ -531,16 +596,25 @@ def main():
 
                         if r.headers.get('Content-Type') == 'application/json':
                             if isinstance(r.json(), dict):  
-                                try:
-                                    m3u8_url = r.json()['sources']['file']
-                                except KeyError:
-                                    logging.error(f"Error: 'sources' or 'file' key not found in JSON response for E{number} {title}. Response: {r.json()}")
-                                try:
-                                    m3u8_url = r.json()['tracks'][0]['file']
-                                except KeyError:
-                                    logging.error(f"Error: 'tracks' or 'file' key not found in JSON response for E{number} {title}. Response: {r.json()}")
-                                    continue
+                                if 'enc' not in r.json():
+                                    try:
+                                        m3u8_url = r.json()['sources']['file']
+                                    except KeyError:
+                                        logging.error(f"Error: 'sources' or 'file' key not found in JSON response for E{number} {title}. Response: {r.json()}")
+                                        continue
+                                else:
 
+                                    script = next(
+                                            (s["src"] for s in soup.select("script[src]") if "e1-player" in s["src"]),
+                                            None,
+                                        )
+                                    key, iv, secret, ttl = player_parameters(js)
+                                    m3u8_url = decrypt_source(r.json()["enc"], key, iv) 
+                                    if isinstance(m3u8_url, list):
+                                        m3u8_url = next((s for s in m3u8_url if isinstance(s, dict) and s.get("file")), None)
+                                    if isinstance(m3u8_url, dict):
+                                        m3u8_url = m3u8_url.get("file")
+                                    m3u8_url = signed_url(m3u8_url, secret, ttl)
                                 if args.debug:
                                     print(m3u8_url)
 
