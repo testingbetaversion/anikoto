@@ -1,6 +1,6 @@
 [project]
 name = "anikoto" 
-version = "8.0.0"
+version = "8.1.0"
 description = "Download anime from `anikoto.tv` / `anikoto.bz` / `anikoto.net` / `anikoto.cz`"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -15,7 +15,7 @@ classifiers = [
 dependencies = [
        'requests',
         'yt-dlp',
-
+        'pycryptodome',
         'bs4',
         'curl_cffi',
         'm3u8',
