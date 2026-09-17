@@ -21,7 +21,7 @@ import m3u8
 import json 
 import time
 import hmac
-from urllib.parse import parse_qs, quote, urljoin, urlsplit
+from urllib.parse import parse_qs, quote, urljoin, urlsplit, unquote
 import requests as another_request
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -159,18 +159,104 @@ class ExtractionError(Exception):
     pass
 
 
+
+def unpack_player_strings(script):
+    """Statically decode the current player's XOR wrapper and string table.
+
+    The wrapper encrypts an initializer beginning '(function(){function '.
+    Recover its repeating XOR key from that known prefix, then decode the
+    table. Never execute eval(), Function(), or any downloaded JavaScript.
+    """
+    wrapper_match = re.search(r"\breturn\s+eval\((" + JS_STRING + r")\)", script)
+    object_match = re.match(r"\s*let\s+([\w$]+)\s*;", script)
+    if not wrapper_match or not object_match:
+        raise ExtractionError("Unrecognized obfuscated player wrapper.")
+    wrapper = js_string(wrapper_match[1])
+    payload_match = re.search(r"\}\)\((" + JS_STRING + r")\)\s*$", wrapper)
+    if not payload_match:
+        raise ExtractionError("Obfuscated player payload missing.")
+    # JS decodeURI leaves reserved URI punctuation escaped.
+    payload = re.sub(
+        r"%[0-9a-fA-F]{2}",
+        lambda m: m[0] if unquote(m[0]) in ";/?:@&=+$,#" else unquote(m[0]),
+        js_string(payload_match[1]),
+    )
+    prefix = "(function(){function "
+    known_key = [ord(a) ^ ord(b) for a, b in zip(payload, prefix)]
+    decoded = None
+    for size in range(1, len(known_key) // 2 + 1):
+        if all(value == known_key[i % size] for i, value in enumerate(known_key)):
+            candidate = "".join(chr(ord(c) ^ known_key[i % size]) for i, c in enumerate(payload))
+            if candidate.startswith(prefix) and candidate.rstrip().endswith("})"):
+                decoded = candidate
+                break
+    if decoded is None:
+        raise ExtractionError("Player XOR wrapper format changed.")
+
+    arrays = re.finditer(
+        r"(?:let|const|var)\s+[\w$]+\s*=\s*(\[\s*(?:" + JS_STRING + r"\s*,?\s*)*\])",
+        decoded,
+    )
+    table = None
+    for array in arrays:
+        entries = [js_string(m[0]) for m in re.finditer(JS_STRING, array[1])]
+        for entry in entries:
+            if len(entry) != len("AES-CBC"):
+                continue
+            mask = ord(entry[0]) ^ ord("A")
+            if "".join(chr(ord(c) ^ mask) for c in entry) != "AES-CBC":
+                continue
+            candidate = ["".join(chr(ord(c) ^ mask) for c in value) for value in entries]
+            if all(value in candidate for value in ("HMAC", "SHA-256", "importKey", "decrypt")):
+                table = candidate
+                break
+        if table is not None:
+            break
+    if table is None:
+        raise ExtractionError("Player crypto string table could not be decoded.")
+
+    def lookup(match):
+        index = int(match[1])
+        if index >= len(table):
+            raise ExtractionError("Player string-table index is out of range.")
+        return json.dumps(table[index])
+
+    return re.sub(re.escape(object_match[1]) + r"\.[\w$]+\((\d+)\)", lookup, script)
+
+
+JS_STRING = r'"(?:\\.|[^"\\])*"'
+
+
+def js_string(literal):
+    """Decode a quoted JS string as data, including JS-only escape sequences."""
+    escapes = {"b": "\b", "f": "\f", "n": "\n", "r": "\r", "t": "\t", "v": "\v", "0": "\0"}
+
+    def replace(match):
+        value = match[1]
+        if value.startswith(("x", "u")) and len(value) > 1:
+            return chr(int(value[1:], 16))
+        if value in ("\n", "\r\n"):
+            return ""
+        return escapes.get(value, value)
+
+    return re.sub(r"\\(x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|\r\n|[\s\S])", replace, literal[1:-1])
+
 def player_parameters(script):
     """Read the public AES key/IV and CDN signing parameters, without eval()."""
-    literal = r'("(?:\\.|[^"\\])*")'
+    if "AES-CBC" not in script:
+        script = unpack_player_strings(script)
+    literal = "(" + JS_STRING + ")"
+    separator = r"\s*(?:,|;\s*const\s+)\s*"
     pattern = (
-        r"\bconst\s+[\w$]+=" + literal
-        + r",[\w$]+=" + literal
-        + r",[\w$]+=" + literal
-        + r",[\w$]+=(\d+);function\s+[\w$]+\("
+        r"\bconst\s+[\w$]+\s*=\s*" + literal
+        + separator + r"[\w$]+\s*=\s*" + literal
+        + separator + r"[\w$]+\s*=\s*" + literal
+        + separator + r"[\w$]+\s*=\s*(\d+)\s*;\s*function\s+[\w$]+\("
     )
     for match in re.finditer(pattern, script):
-        if "AES-CBC" in script[match.end():match.end() + 2500]:
-            key, iv, secret = (json.loads(value) for value in match.groups()[:3])
+        nearby = script[match.end():match.end() + 12000]
+        if "AES-CBC" in nearby and "HMAC" in nearby:
+            key, iv, secret = (js_string(value) for value in match.groups()[:3])
             return key, iv, secret, int(match[4])
     raise ExtractionError("Player crypto parameters changed; update player_parameters().")
 
@@ -603,7 +689,6 @@ def main():
                                         logging.error(f"Error: 'sources' or 'file' key not found in JSON response for E{number} {title}. Response: {r.json()}")
                                         continue
                                 else:
-
                                     script = next(
                                             (s["src"] for s in soup.select("script[src]") if "e1-player" in s["src"]),
                                             None,

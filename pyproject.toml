@@ -1,6 +1,6 @@
 [project]
 name = "anikoto" 
-version = "8.1.0"
+version = "8.2.0"
 description = "Download anime from `anikoto.tv` / `anikoto.bz` / `anikoto.net` / `anikoto.cz`"
 readme = "README.md"
 requires-python = ">=3.8"
