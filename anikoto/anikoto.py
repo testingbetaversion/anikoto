@@ -343,8 +343,13 @@ def download(url, referer, path, anime, title, number,args):
             ydl_opts['format_sort'] = [f'res:{args.quality}']
         if args.debug:
             logging.debug(ydl_opts)
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+        except yt_dlp.utils.DownloadError as e:
+            # let the caller fall through to the next server instead of aborting the episode
+            logging.error(f"Download failed for E{number} {title}: {e}")
+            return False
 
     elif downloader == 'ffmpeg':
         headers = (
